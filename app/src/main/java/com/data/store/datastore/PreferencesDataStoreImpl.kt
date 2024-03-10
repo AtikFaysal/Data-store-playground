@@ -16,6 +16,4 @@ class PreferencesDataStoreImpl @Inject constructor(
 
     override suspend fun <T> putData(key: Preferences.Key<T>, value: T) =
         store.putPrefData(key, value)
-
-    override suspend fun clearData() = store.clearAllData()
 }
