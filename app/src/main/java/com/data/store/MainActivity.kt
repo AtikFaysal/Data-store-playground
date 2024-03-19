@@ -21,11 +21,14 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.data.store.ui.ThemePreviews
 import com.data.store.ui.component.AppTextField
 import com.data.store.ui.component.RoundPrimaryButton
@@ -40,7 +43,24 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             DataStorePlaygroundTheme {
-                LoginUi()
+                val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+                LaunchedEffect(viewModel) {
+
+                }
+                LoginUi(
+                    userName = { viewModel.formData.userName },
+                    password = { viewModel.formData.password },
+                    isRemember = { viewModel.formData.isRemembered },
+                    onChangePassword = {
+                        viewModel.uiAction(UiAction.OnChangePassword(it))
+                    },
+                    onChangeUserName = {
+                        viewModel.uiAction(UiAction.OnChangeUserName(it))
+                    },
+                    onChangeRemember = {
+                        viewModel.uiAction(UiAction.OnChangeRemember(it))
+                    }
+                )
             }
         }
     }
@@ -49,17 +69,18 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun LoginUi(
     modifier: Modifier = Modifier,
-    userName : String = "",
-    password : String = "",
-    isRemembered : Boolean = false
+    onChangeUserName: (String) -> Unit,
+    onChangePassword: (String) -> Unit,
+    onChangeRemember: (Boolean) -> Unit,
+    userName: () -> String,
+    password: () -> String,
+    isRemember: () -> Boolean,
 ) {
     Surface(
-        modifier = modifier.fillMaxSize(),
-        color = MaterialTheme.colorScheme.background
+        modifier = modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background
     ) {
         Column(
-            modifier = modifier
-                .padding(10.dp),
+            modifier = modifier.padding(10.dp),
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
@@ -67,9 +88,8 @@ fun LoginUi(
                 modifier = modifier,
                 hint = "Enter username",
                 leadIcon = Icons.Outlined.Email,
-                onValueChanged = {
-
-                }
+                onValueChanged = onChangeUserName,
+                text = userName()
             )
 
             Spacer(modifier = Modifier.height(25.dp))
@@ -78,9 +98,8 @@ fun LoginUi(
                 modifier = modifier,
                 hint = "Enter password",
                 leadIcon = Icons.Outlined.Lock,
-                onValueChanged = {
-
-                }
+                onValueChanged = onChangePassword,
+                text = password()
             )
 
             Spacer(modifier = Modifier.height(25.dp))
@@ -94,10 +113,10 @@ fun LoginUi(
 
             Row(
                 verticalAlignment = Alignment.CenterVertically
-            ){
+            ) {
                 Checkbox(
-                    checked = true,
-                    onCheckedChange = {},
+                    checked = isRemember(),
+                    onCheckedChange = onChangeRemember,
                     colors = CheckboxDefaults.colors(
                         checkedColor = MaterialTheme.colorScheme.primary,
                         uncheckedColor = Color.Gray,
@@ -113,5 +132,5 @@ fun LoginUi(
 @ThemePreviews
 @Composable
 fun GreetingPreview() {
-    LoginUi()
+    //LoginUi()
 }
