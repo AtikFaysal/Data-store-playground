@@ -26,4 +26,10 @@ class PreferencesDataStore @Inject constructor(
             it[key] = value
         }
     }
+
+    suspend fun clearAllData(){
+        dataStore.edit {
+            it.clear()
+        }
+    }
 }

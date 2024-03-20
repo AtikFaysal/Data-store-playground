@@ -1,6 +1,7 @@
 package com.data.store
 
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
@@ -12,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Email
 import androidx.compose.material.icons.outlined.Lock
@@ -26,7 +28,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.colorResource
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.data.store.ui.ThemePreviews
@@ -45,22 +48,30 @@ class MainActivity : ComponentActivity() {
             DataStorePlaygroundTheme {
                 val uiState by viewModel.uiState.collectAsStateWithLifecycle()
                 LaunchedEffect(viewModel) {
-
-                }
-                LoginUi(
-                    userName = { viewModel.formData.userName },
-                    password = { viewModel.formData.password },
-                    isRemember = { viewModel.formData.isRemembered },
-                    onChangePassword = {
-                        viewModel.uiAction(UiAction.OnChangePassword(it))
-                    },
-                    onChangeUserName = {
-                        viewModel.uiAction(UiAction.OnChangeUserName(it))
-                    },
-                    onChangeRemember = {
-                        viewModel.uiAction(UiAction.OnChangeRemember(it))
+                    viewModel.uiEvent.collect{
+                        when(it){
+                            is UiEvent.ShowToastMessage -> Toast.makeText(this@MainActivity, it.message,Toast.LENGTH_SHORT).show()
+                        }
                     }
-                )
+                }
+                when(uiState){
+                    UiState.Default -> {
+                        LoginUi(
+                            userName = { viewModel.formData.userName },
+                            password = { viewModel.formData.password },
+                            isRemember = { viewModel.formData.isRemembered },
+                            onChangePassword = {
+                                viewModel.uiAction(UiAction.OnChangePassword(it))
+                            },
+                            onChangeUserName = {
+                                viewModel.uiAction(UiAction.OnChangeUserName(it))
+                            },
+                            onChangeRemember = {
+                                viewModel.uiAction(UiAction.OnChangeRemember(it))
+                            }
+                        )
+                    }
+                }
             }
         }
     }
@@ -85,21 +96,29 @@ fun LoginUi(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             AppTextField(
-                modifier = modifier,
+                modifier = Modifier,
                 hint = "Enter username",
                 leadIcon = Icons.Outlined.Email,
                 onValueChanged = onChangeUserName,
-                text = userName()
+                text = userName(),
+                keyBoardType = KeyboardOptions(
+                    keyboardType = KeyboardType.Text,
+                    imeAction = ImeAction.Next
+                )
             )
 
             Spacer(modifier = Modifier.height(25.dp))
 
             AppTextField(
-                modifier = modifier,
+                modifier = Modifier,
                 hint = "Enter password",
                 leadIcon = Icons.Outlined.Lock,
                 onValueChanged = onChangePassword,
-                text = password()
+                text = password(),
+                keyBoardType = KeyboardOptions(
+                    keyboardType = KeyboardType.Password,
+                    imeAction = ImeAction.Done
+                )
             )
 
             Spacer(modifier = Modifier.height(25.dp))

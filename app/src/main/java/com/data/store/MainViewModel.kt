@@ -2,13 +2,16 @@ package com.data.store
 
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.data.store.datastore.PrefDataStoreConstants
 import com.data.store.datastore.PreferencesDataStoreRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -17,14 +20,19 @@ class MainViewModel @Inject constructor(
     private val repository : PreferencesDataStoreRepository,
 ) : ViewModel(){
 
-    val formData by mutableStateOf(MainState())
+    var formData by mutableStateOf(MainState())
+
+    private val _uiEvent = Channel<UiEvent>()
+    val uiEvent = _uiEvent.receiveAsFlow()
 
     val uiAction : (UiAction) -> Unit = {
         when(it){
-            is UiAction.OnChangePassword -> formData.copy(password = it.password)
-            is UiAction.OnChangeUserName -> formData.copy(userName = it.userName)
-            is UiAction.RememberLoginData -> savePreferenceData()
-            is UiAction.OnChangeRemember -> formData.copy(isRemembered = it.isRemember)
+            is UiAction.OnChangePassword -> formData = formData.copy(password = it.password)
+            is UiAction.OnChangeUserName -> formData = formData.copy(userName = it.userName)
+            is UiAction.OnChangeRemember -> {
+                formData = formData.copy(isRemembered = it.isRemember)
+                savePreferenceData()
+            }
         }
     }
 
@@ -37,7 +45,7 @@ class MainViewModel @Inject constructor(
 
     private fun getPreferenceData(){
         viewModelScope.launch {
-            formData.copy(
+            formData = formData.copy(
                 userName = repository.getFirstData(PrefDataStoreConstants.USER_NAME) ?: "",
                 password = repository.getFirstData(PrefDataStoreConstants.PASSWORD) ?: "",
                 isRemembered = repository.getFirstData(PrefDataStoreConstants.IS_REMEMBERED)
@@ -48,9 +56,15 @@ class MainViewModel @Inject constructor(
 
     private fun savePreferenceData(){
         viewModelScope.launch {
-            repository.putData(PrefDataStoreConstants.IS_REMEMBERED, formData.isRemembered)
-            repository.putData(PrefDataStoreConstants.USER_NAME, formData.userName)
-            repository.putData(PrefDataStoreConstants.PASSWORD, formData.password)
+            if(formData.isRemembered){
+                repository.putData(PrefDataStoreConstants.IS_REMEMBERED, formData.isRemembered)
+                repository.putData(PrefDataStoreConstants.USER_NAME, formData.userName)
+                repository.putData(PrefDataStoreConstants.PASSWORD, formData.password)
+                _uiEvent.send(UiEvent.ShowToastMessage("Data remembered"))
+            }else {
+                repository.clearData()
+                _uiEvent.send(UiEvent.ShowToastMessage("Data cleared"))
+            }
         }
     }
 }
@@ -75,5 +89,4 @@ sealed interface UiAction {
     data class OnChangeUserName(val userName : String) : UiAction
     data class OnChangePassword(val password : String) : UiAction
     data class OnChangeRemember(val isRemember : Boolean) : UiAction
-    data object RememberLoginData : UiAction
 }

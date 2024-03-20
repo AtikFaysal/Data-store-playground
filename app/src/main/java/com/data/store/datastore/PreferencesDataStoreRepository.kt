@@ -9,4 +9,6 @@ interface PreferencesDataStoreRepository {
     suspend fun<T> getFirstData(key: Preferences.Key<T>): T?
 
     suspend fun<T> putData(key:Preferences.Key<T>,value:T)
+
+    suspend fun clearData()
 }
